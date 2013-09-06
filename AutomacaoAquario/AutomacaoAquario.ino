@@ -4,11 +4,12 @@
 #include <DS3231RTC.h>
 
 #define DS1307_ADDRESS      0x68
-#define HORA_ACENDIMENTO    18
+#define HORA_ACENDIMENTO    16
 #define MINUTO_ACENDIMENTO  30
 #define HORA_DESLIGAMENTO   22
-#define MINUTO_DESLIGAMENTO 55
+#define MINUTO_DESLIGAMENTO 30
 #define PORTA_PWM_RELE      8
+#define PORTA_LED_MEGA      13
 
 boolean _luzesAcesas;
 
@@ -16,14 +17,17 @@ void setup(void){
   Wire.begin();
   Serial.begin(9600);
   pinMode(PORTA_PWM_RELE, OUTPUT);
+  pinMode(PORTA_LED_MEGA, OUTPUT);
   digitalWrite(PORTA_PWM_RELE, HIGH);
   _luzesAcesas = false;
 }
 
 void loop(){
   verificarHorarioLuzes();
-  
-  delay(1000);
+  digitalWrite(PORTA_LED_MEGA, LOW);
+  delay(500);
+  digitalWrite(PORTA_LED_MEGA, HIGH);
+  delay(500);
 }
 
 byte bcdToDec(byte val)  {
