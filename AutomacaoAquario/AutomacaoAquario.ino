@@ -7,18 +7,22 @@
 #define HORA_ACENDIMENTO    18
 #define MINUTO_ACENDIMENTO  30
 #define HORA_DESLIGAMENTO   22
-#define MINUTO_DESLIGAMENTO 30
+#define MINUTO_DESLIGAMENTO 55
+#define PORTA_PWM_RELE      8
 
 boolean _luzesAcesas;
 
 void setup(void){
   Wire.begin();
   Serial.begin(9600);
+  pinMode(PORTA_PWM_RELE, OUTPUT);
+  digitalWrite(PORTA_PWM_RELE, HIGH);
   _luzesAcesas = false;
 }
 
 void loop(){
   verificarHorarioLuzes();
+  
   delay(1000);
 }
 
@@ -53,31 +57,43 @@ void verificarHorarioLuzes(){
   if(hour > HORA_DESLIGAMENTO || ( hour == HORA_DESLIGAMENTO && minute >= MINUTO_DESLIGAMENTO)){
     //Desliga Rele
     Serial.write("Luzes Apagadas 1\n");
-    mudarEstadoLuzes(false);
+    if(_luzesAcesas){
+       digitalWrite(PORTA_PWM_RELE, HIGH);
+       _luzesAcesas = false;
+    }    
     return;
   } else if(hour > HORA_ACENDIMENTO || (hour == HORA_ACENDIMENTO && minute >= MINUTO_ACENDIMENTO)) {    
     //Liga Rele
     Serial.write("Luzes Acesas\n");
-    mudarEstadoLuzes(true);
+
+    if(!_luzesAcesas){
+       digitalWrite(PORTA_PWM_RELE, LOW);
+       _luzesAcesas = true;
+    }
     return;
   } else {
     //Por default o rele fica desligado
     Serial.write("Luzes Apagadas 2\n");
-    mudarEstadoLuzes(false);
+    if(_luzesAcesas){
+       digitalWrite(PORTA_PWM_RELE, HIGH);
+       _luzesAcesas = false;
+    }   
     return;
   }
 
 }
 
 void mudarEstadoLuzes(boolean acender){
-/*  if(acender && !_luzesAcesas){
+  if(acender && !_luzesAcesas){
     //Procedimento Acender Luzes
+     digitalWrite(PORTA_PWM_RELE, LOW);
     _luzesAcesas = true;
   }
   
   if(!acender && _luzesAcesas){
     //Procedimento Apagar Luzes
+    digitalWrite(PORTA_PWM_RELE, HIGH);
     _luzesAcesas = false;
-  }*/
+  }
 }
 
