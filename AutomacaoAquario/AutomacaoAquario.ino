@@ -7,67 +7,72 @@
 #include <DallasTemperature.h>
 
 #define DS1307_ADDRESS          0x68
+
 #define HORA_ACENDIMENTO        16
 #define MINUTO_ACENDIMENTO      30
 #define HORA_DESLIGAMENTO       22
 #define MINUTO_DESLIGAMENTO     30
-#define PORTA_PWM_RELE          8
+
+#define PORTA_PWM_RELE          9
 #define PORTA_LED_MEGA          13
 
 /* Portas Sensores Temperatura */
-#define SENSOR_TEMPERATURA_1 10
+#define SENSOR_TEMPERATURA 10
 
-/* Portas do LCD */
+// Portas do LCD
 #define PORTA_RS        12
 #define PORTA_ENABLE    11
 #define PORTA_D4        5
 #define PORTA_D5        4
 #define PORTA_D6        3
 #define PORTA_D7        2
-#define PORTA_LUZ_FUNDO 9
+
 
 boolean _luzesAcesas;
 LiquidCrystal lcd(PORTA_RS, PORTA_ENABLE, PORTA_D4, PORTA_D5, PORTA_D6, PORTA_D7);
-OneWire oneWire(SENSOR_TEMPERATURA_1);
-DallasTemperature sensor1(&oneWire);
+OneWire oneWire(SENSOR_TEMPERATURA);
+DallasTemperature sensor(&oneWire);
 
 void setup(void){
   Wire.begin();
   Serial.begin(9600);
   lcd.begin(20, 4);
-  sensor1.begin();
+  sensor.begin();
 
 
   pinMode(PORTA_PWM_RELE, OUTPUT);
   pinMode(PORTA_LED_MEGA, OUTPUT);
-  pinMode(PORTA_LUZ_FUNDO, OUTPUT);
   digitalWrite(PORTA_PWM_RELE, HIGH);
-  digitalWrite(PORTA_LUZ_FUNDO, HIGH);
+  
   _luzesAcesas = false;
 }
 
 void loop(){
   verificarHorarioLuzes();
   verificarTemperatura();
-  digitalWrite(PORTA_LED_MEGA, LOW);
-  delay(500);
-  digitalWrite(PORTA_LED_MEGA, HIGH);
   delay(500);
 }
 
 void verificarTemperatura(){
-  sensor1.requestTemperatures();
+  sensor.requestTemperatures();
   lcd.setCursor(0,3);
-  lcd.print("1 - ");
-  lcd.print(sensor1.getTempCByIndex(0));
+  lcd.print("E: ");
+  lcd.print(sensor.getTempCByIndex(0));
+  lcd.print(" D: ");
+  lcd.print(sensor.getTempCByIndex(1));
+  Serial.print(sensor.getTempCByIndex(0));
+  Serial.print("\n");
+  Serial.print(sensor.getTempCByIndex(1));
+  Serial.print("\n -------------- \n");
+
 }
 byte bcdToDec(byte val)  {
-// Convert binary coded decimal to normal decimal numbers
+  // Convert binary coded decimal to normal decimal numbers
   return ( (val/16*10) + (val%16) );
 }
 
 void verificarHorarioLuzes(){
-  
+
   Wire.beginTransmission(DS1307_ADDRESS);
 
   byte zero = 0x00;
@@ -83,16 +88,16 @@ void verificarHorarioLuzes(){
   int monthDay = bcdToDec(Wire.read());
   int month = bcdToDec(Wire.read());
   int year = bcdToDec(Wire.read());
-  
+
   if(hour > 23)
     hour = 0;
-  
+
   if(minute > 59)
     minute = 0;
-  
+
   if(second > 59)
     second = 0;
-  
+
   lcd.setCursor(0,1);
   lcd.print(hour <  10 ? "0" + String(hour) : hour);
   lcd.print(":");
@@ -103,23 +108,25 @@ void verificarHorarioLuzes(){
   if(hour > HORA_DESLIGAMENTO || ( hour == HORA_DESLIGAMENTO && minute >= MINUTO_DESLIGAMENTO)){
     //Desliga Rele
     if(_luzesAcesas){
-       digitalWrite(PORTA_PWM_RELE, HIGH);
-       _luzesAcesas = false;
+      digitalWrite(PORTA_PWM_RELE, HIGH);
+      _luzesAcesas = false;
     }    
-  } else if(hour > HORA_ACENDIMENTO || (hour == HORA_ACENDIMENTO && minute >= MINUTO_ACENDIMENTO)) {    
+  } 
+  else if(hour > HORA_ACENDIMENTO || (hour == HORA_ACENDIMENTO && minute >= MINUTO_ACENDIMENTO)) {    
     //Liga Rele
     if(!_luzesAcesas){
-       digitalWrite(PORTA_PWM_RELE, LOW);
-       _luzesAcesas = true;
+      digitalWrite(PORTA_PWM_RELE, LOW);
+      _luzesAcesas = true;
     }
-  } else {
+  } 
+  else {
     //Por default o rele fica desligado
     if(_luzesAcesas){
-       digitalWrite(PORTA_PWM_RELE, HIGH);
-       _luzesAcesas = false;
+      digitalWrite(PORTA_PWM_RELE, HIGH);
+      _luzesAcesas = false;
     }   
   }
-  
+
   if(_luzesAcesas)
     lcd.print("Luz Acesa");
   else
@@ -130,14 +137,15 @@ void verificarHorarioLuzes(){
 void mudarEstadoLuzes(boolean acender){
   if(acender && !_luzesAcesas){
     //Procedimento Acender Luzes
-     digitalWrite(PORTA_PWM_RELE, LOW);
+    digitalWrite(PORTA_PWM_RELE, LOW);
     _luzesAcesas = true;
   }
-  
+
   if(!acender && _luzesAcesas){
     //Procedimento Apagar Luzes
     digitalWrite(PORTA_PWM_RELE, HIGH);
     _luzesAcesas = false;
   }
 }
+
 
